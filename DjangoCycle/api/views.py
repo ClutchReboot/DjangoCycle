@@ -30,8 +30,7 @@ class TaskViewSet(viewsets.ModelViewSet):
                     # TODO: Error handling drops out of loop.
                     # Example: If 2 tasks asked to be created but 1 already exists.
                     # A single object will be returned instead of an array with 1 pass / 1 fail.
-                    future = e.submit(update_serializer, single_request)
-                    futures.append(future)
+                    futures.append(e.submit(update_serializer, single_request))
                 headers = self.get_success_headers(futures[0].result())
                 combined_responses = [response.result() for response in futures]
                 return Response(combined_responses, status=status.HTTP_201_CREATED, headers=headers)
