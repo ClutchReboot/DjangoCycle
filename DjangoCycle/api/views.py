@@ -24,6 +24,10 @@ class TaskViewSet(viewsets.ModelViewSet):
             return {**serializer.data, 'error': serializer.errors}
 
         if isinstance(request.data, list):
+            if len(request.data) > 10:
+                error = {'error': 'The length of the payload is too large.'}
+                return Response(error, status=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE)
+
             futures = []
             with ThreadPoolExecutor(max_workers=2) as e:
                 for single_request in request.data:
