@@ -15,25 +15,22 @@ class TaskViewSet(viewsets.ModelViewSet):
     pagination_class = LimitOffsetPagination
 
     def create(self, request, *args, **kwargs):
-        # TODO: Require Content-Type json
 
-        def update_serializer(request):
+        def update_serializer(request) -> dict:
             serializer = self.get_serializer(data=request)
-            serializer.is_valid(raise_exception=True)
-            self.perform_create(serializer)
-            return serializer.data
+            if serializer.is_valid():
+                self.perform_create(serializer)
+                return serializer.data
+            return {**serializer.data, 'error': serializer.errors}
 
         if isinstance(request.data, list):
             futures = []
             with ThreadPoolExecutor(max_workers=2) as e:
                 for single_request in request.data:
-                    # TODO: Error handling drops out of loop.
-                    # Example: If 2 tasks asked to be created but 1 already exists.
-                    # A single object will be returned instead of an array with 1 pass / 1 fail.
                     futures.append(e.submit(update_serializer, single_request))
-                headers = self.get_success_headers(futures[0].result())
-                combined_responses = [response.result() for response in futures]
-                return Response(combined_responses, status=status.HTTP_201_CREATED, headers=headers)
+            headers = self.get_success_headers(futures[0].result())
+            combined_responses = [response.result() for response in futures]
+            return Response(combined_responses, status=status.HTTP_201_CREATED, headers=headers)
 
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
